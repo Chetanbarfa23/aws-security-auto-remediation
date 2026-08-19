@@ -26,7 +26,7 @@ resource "aws_iam_role" "github_actions" {
           StringEquals = {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
 
-            "token.actions.githubusercontent.com:sub" = "repo:chetanbarfa23@182407639/aws-security-auto-remediation@1336951937:ref:refs/heads/main"
+            "token.actions.githubusercontent.com:sub" = "repo:Chetanbarfa23@182407639/aws-security-auto-remediation@1336951937:ref:refs/heads/main"
           }
         }
       }
