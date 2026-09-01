@@ -57,9 +57,9 @@ resource "aws_iam_role_policy" "github_actions" {
 
     Statement = [
 
-      # --------------------------------------------------------
-      # Lambda permissions
-      # --------------------------------------------------------
+      # ========================================================
+      # Lambda Permissions
+      # ========================================================
 
       {
         Effect = "Allow"
@@ -79,9 +79,9 @@ resource "aws_iam_role_policy" "github_actions" {
       },
 
 
-      # --------------------------------------------------------
-      # EventBridge permissions
-      # --------------------------------------------------------
+      # ========================================================
+      # EventBridge Permissions
+      # ========================================================
 
       {
         Effect = "Allow"
@@ -90,6 +90,7 @@ resource "aws_iam_role_policy" "github_actions" {
           "events:CreateEventBus",
           "events:DeleteEventBus",
           "events:DescribeEventBus",
+          "events:ListTagsForResource",
           "events:PutRule",
           "events:DeleteRule",
           "events:DescribeRule",
@@ -102,14 +103,15 @@ resource "aws_iam_role_policy" "github_actions" {
       },
 
 
-      # --------------------------------------------------------
-      # Security Group permissions
-      # --------------------------------------------------------
+      # ========================================================
+      # Security Group Permissions
+      # ========================================================
 
       {
         Effect = "Allow"
 
         Action = [
+          "ec2:DescribeVpcs",
           "ec2:DescribeSecurityGroups",
           "ec2:CreateSecurityGroup",
           "ec2:AuthorizeSecurityGroupIngress",
@@ -123,13 +125,13 @@ resource "aws_iam_role_policy" "github_actions" {
       },
 
 
-      # --------------------------------------------------------
-      # IAM permissions
-      # --------------------------------------------------------
+      # ========================================================
+      # IAM Permissions
+      # ========================================================
       #
       # IAM is sensitive, so we limit these permissions to
       # the roles used by this project.
-      # --------------------------------------------------------
+      # ========================================================
 
       {
         Effect = "Allow"
@@ -142,6 +144,7 @@ resource "aws_iam_role_policy" "github_actions" {
           "iam:PutRolePolicy",
           "iam:DeleteRolePolicy",
           "iam:GetRolePolicy",
+          "iam:ListRolePolicies",
           "iam:PassRole"
         ]
 
@@ -152,9 +155,9 @@ resource "aws_iam_role_policy" "github_actions" {
       },
 
 
-      # --------------------------------------------------------
-      # OIDC Provider permissions
-      # --------------------------------------------------------
+      # ========================================================
+      # OIDC Provider Permissions
+      # ========================================================
 
       {
         Effect = "Allow"
