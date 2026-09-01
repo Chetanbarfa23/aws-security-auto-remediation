@@ -39,3 +39,189 @@ resource "aws_iam_role" "github_actions" {
     ManagedBy   = "Terraform"
   }
 }
+
+
+# ============================================================
+# GitHub Actions Permissions
+# ============================================================
+
+resource "aws_iam_role_policy" "github_actions" {
+
+  name = "GitHubActionsSecurityAutomationPolicy"
+
+  role = aws_iam_role.github_actions.id
+
+  policy = jsonencode({
+
+    Version = "2012-10-17"
+
+    Statement = [
+
+      # --------------------------------------------------------
+      # Lambda permissions
+      # --------------------------------------------------------
+
+      {
+        Effect = "Allow"
+
+        Action = [
+          "lambda:GetFunction",
+          "lambda:CreateFunction",
+          "lambda:UpdateFunctionCode",
+          "lambda:UpdateFunctionConfiguration",
+          "lambda:DeleteFunction",
+          "lambda:AddPermission",
+          "lambda:RemovePermission",
+          "lambda:GetPolicy"
+        ]
+
+        Resource = "*"
+      },
+
+
+      # --------------------------------------------------------
+      # EventBridge permissions
+      # --------------------------------------------------------
+
+      {
+        Effect = "Allow"
+
+        Action = [
+          "events:CreateEventBus",
+          "events:DeleteEventBus",
+          "events:DescribeEventBus",
+          "events:PutRule",
+          "events:DeleteRule",
+          "events:DescribeRule",
+          "events:PutTargets",
+          "events:RemoveTargets",
+          "events:ListTargetsByRule"
+        ]
+
+        Resource = "*"
+      },
+
+
+      # --------------------------------------------------------
+      # Security Group permissions
+      # --------------------------------------------------------
+
+      {
+        Effect = "Allow"
+
+        Action = [
+          "ec2:DescribeSecurityGroups",
+          "ec2:CreateSecurityGroup",
+          "ec2:AuthorizeSecurityGroupIngress",
+          "ec2:RevokeSecurityGroupIngress",
+          "ec2:AuthorizeSecurityGroupEgress",
+          "ec2:RevokeSecurityGroupEgress",
+          "ec2:DeleteSecurityGroup"
+        ]
+
+        Resource = "*"
+      },
+
+
+      # --------------------------------------------------------
+      # IAM permissions
+      # --------------------------------------------------------
+      #
+      # IAM is sensitive, so we limit these permissions to
+      # the roles used by this project.
+      # --------------------------------------------------------
+
+      {
+        Effect = "Allow"
+
+        Action = [
+          "iam:GetRole",
+          "iam:CreateRole",
+          "iam:UpdateAssumeRolePolicy",
+          "iam:DeleteRole",
+          "iam:PutRolePolicy",
+          "iam:DeleteRolePolicy",
+          "iam:GetRolePolicy",
+          "iam:PassRole"
+        ]
+
+        Resource = [
+          aws_iam_role.github_actions.arn,
+          aws_iam_role.lambda_execution.arn
+        ]
+      },
+
+
+      # --------------------------------------------------------
+      # OIDC Provider permissions
+      # --------------------------------------------------------
+
+      {
+        Effect = "Allow"
+
+        Action = [
+          "iam:GetOpenIDConnectProvider",
+          "iam:CreateOpenIDConnectProvider",
+          "iam:UpdateOpenIDConnectProvider",
+          "iam:DeleteOpenIDConnectProvider"
+        ]
+
+        Resource = "*"
+      },
+
+
+      # ========================================================
+      # Terraform S3 Remote State Permissions
+      # ========================================================
+
+      # --------------------------------------------------------
+      # Allow Terraform to access the state bucket
+      # --------------------------------------------------------
+
+      {
+        Effect = "Allow"
+
+        Action = [
+          "s3:ListBucket"
+        ]
+
+        Resource = "arn:aws:s3:::aws-security-auto-remediation-terraform-state-438546837574"
+      },
+
+
+      # --------------------------------------------------------
+      # Allow Terraform to read/write the state file
+      # --------------------------------------------------------
+
+      {
+        Effect = "Allow"
+
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ]
+
+        Resource = "arn:aws:s3:::aws-security-auto-remediation-terraform-state-438546837574/security-auto-remediation/terraform.tfstate"
+      },
+
+
+      # --------------------------------------------------------
+      # Allow Terraform to use the S3 lock file
+      # --------------------------------------------------------
+
+      {
+        Effect = "Allow"
+
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ]
+
+        Resource = "arn:aws:s3:::aws-security-auto-remediation-terraform-state-438546837574/security-auto-remediation/terraform.tfstate.tflock"
+      }
+
+    ]
+  })
+}
