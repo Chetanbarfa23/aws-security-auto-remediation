@@ -72,7 +72,38 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 5. Terraform initialization
+      # 5. Build Lambda deployment package
+      # --------------------------------------------------------
+      #
+      # GitHub Actions creates the ZIP.
+      #
+      # Source:
+      # lambda/handler.py
+      #
+      # Output:
+      # terraform/lambda_function.zip
+      # --------------------------------------------------------
+
+      - name: Build Lambda package
+        working-directory: .
+        run: |
+          rm -f terraform/lambda_function.zip
+          cd lambda
+          zip -j ../terraform/lambda_function.zip handler.py
+
+
+      # --------------------------------------------------------
+      # 6. Verify Lambda package
+      # --------------------------------------------------------
+
+      - name: Verify Lambda package
+        run: |
+          ls -lh lambda_function.zip
+          unzip -l lambda_function.zip
+
+
+      # --------------------------------------------------------
+      # 7. Terraform initialization
       # --------------------------------------------------------
 
       - name: Terraform Init
@@ -80,7 +111,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 6. Terraform formatting check
+      # 8. Terraform formatting check
       # --------------------------------------------------------
 
       - name: Terraform Format Check
@@ -88,7 +119,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 7. Terraform validation
+      # 9. Terraform validation
       # --------------------------------------------------------
 
       - name: Terraform Validate
@@ -96,14 +127,10 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 8. Terraform Plan
+      # 10. Terraform Plan
       # --------------------------------------------------------
       #
-      # The archive_file data source creates:
-      #
-      # terraform/lambda_function.zip
-      #
-      # This ZIP is required later by Terraform Apply.
+      # Terraform uses the ZIP created above.
       # --------------------------------------------------------
 
       - name: Terraform Plan
@@ -111,15 +138,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 9. Verify Lambda package exists
-      # --------------------------------------------------------
-
-      - name: Verify Lambda package
-        run: ls -lh lambda_function.zip
-
-
-      # --------------------------------------------------------
-      # 10. Upload exact Terraform Plan
+      # 11. Upload exact Terraform Plan
       # --------------------------------------------------------
 
       - name: Upload Terraform Plan
@@ -132,13 +151,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 11. Upload exact Lambda ZIP
-      # --------------------------------------------------------
-      #
-      # The apply job runs on a fresh GitHub runner.
-      #
-      # Therefore we must transfer the generated ZIP from
-      # the plan job to the apply job.
+      # 12. Upload exact Lambda package
       # --------------------------------------------------------
 
       - name: Upload Lambda package
@@ -164,10 +177,6 @@ jobs:
 
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
-    # ----------------------------------------------------------
-    # Apply starts only after Terraform Plan succeeds.
-    # ----------------------------------------------------------
-
     needs: terraform
 
     runs-on: ubuntu-latest
@@ -175,12 +184,6 @@ jobs:
 
     # ----------------------------------------------------------
     # Production Environment
-    # ----------------------------------------------------------
-    #
-    # GitHub applies the protection rules configured for the
-    # "production" environment.
-    #
-    # Manual approval can therefore be required before apply.
     # ----------------------------------------------------------
 
     environment:
@@ -251,17 +254,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 7. Download exact Lambda ZIP
-      # --------------------------------------------------------
-      #
-      # This fixes:
-      #
-      # Error: reading ZIP file
-      # open ./lambda_function.zip:
-      # no such file or directory
-      #
-      # The ZIP generated during Terraform Plan is restored
-      # into the terraform directory before Apply.
+      # 7. Download exact Lambda package
       # --------------------------------------------------------
 
       - name: Download Lambda package
@@ -273,7 +266,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 8. Verify Terraform Plan exists
+      # 8. Verify Terraform Plan
       # --------------------------------------------------------
 
       - name: Verify Terraform Plan
@@ -281,15 +274,17 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 9. Verify Lambda package exists
+      # 9. Verify Lambda package
       # --------------------------------------------------------
 
       - name: Verify Lambda package
-        run: ls -lh lambda_function.zip
+        run: |
+          ls -lh lambda_function.zip
+          unzip -l lambda_function.zip
 
 
       # --------------------------------------------------------
-      # 10. Apply the approved Terraform Plan
+      # 10. Apply the exact approved Terraform Plan
       # --------------------------------------------------------
 
       - name: Terraform Apply
