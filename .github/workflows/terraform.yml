@@ -9,9 +9,15 @@ on:
     branches:
       - main
 
+
+# ============================================================
+# GitHub Actions Permissions
+# ============================================================
+
 permissions:
   id-token: write
   contents: read
+
 
 jobs:
 
@@ -92,13 +98,28 @@ jobs:
       # --------------------------------------------------------
       # 8. Terraform Plan
       # --------------------------------------------------------
+      #
+      # The archive_file data source creates:
+      #
+      # terraform/lambda_function.zip
+      #
+      # This ZIP is required later by Terraform Apply.
+      # --------------------------------------------------------
 
       - name: Terraform Plan
         run: terraform plan -out=tfplan
 
 
       # --------------------------------------------------------
-      # 9. Upload exact Terraform Plan
+      # 9. Verify Lambda package exists
+      # --------------------------------------------------------
+
+      - name: Verify Lambda package
+        run: ls -lh lambda_function.zip
+
+
+      # --------------------------------------------------------
+      # 10. Upload exact Terraform Plan
       # --------------------------------------------------------
 
       - name: Upload Terraform Plan
@@ -107,6 +128,26 @@ jobs:
         with:
           name: terraform-plan
           path: terraform/tfplan
+          if-no-files-found: error
+
+
+      # --------------------------------------------------------
+      # 11. Upload exact Lambda ZIP
+      # --------------------------------------------------------
+      #
+      # The apply job runs on a fresh GitHub runner.
+      #
+      # Therefore we must transfer the generated ZIP from
+      # the plan job to the apply job.
+      # --------------------------------------------------------
+
+      - name: Upload Lambda package
+        uses: actions/upload-artifact@v4
+
+        with:
+          name: lambda-package
+          path: terraform/lambda_function.zip
+          if-no-files-found: error
 
 
   # ============================================================
@@ -117,32 +158,39 @@ jobs:
 
     # ----------------------------------------------------------
     # Apply ONLY after a push to main.
+    #
     # Pull Requests can plan but cannot deploy.
     # ----------------------------------------------------------
 
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
+    # ----------------------------------------------------------
     # Apply starts only after Terraform Plan succeeds.
+    # ----------------------------------------------------------
+
     needs: terraform
 
     runs-on: ubuntu-latest
+
 
     # ----------------------------------------------------------
     # Production Environment
     # ----------------------------------------------------------
     #
-    # GitHub will apply the protection rules configured for
-    # the "production" environment.
+    # GitHub applies the protection rules configured for the
+    # "production" environment.
     #
-    # This can require manual approval before deployment.
+    # Manual approval can therefore be required before apply.
     # ----------------------------------------------------------
 
     environment:
       name: production
 
+
     defaults:
       run:
         working-directory: terraform
+
 
     steps:
 
@@ -191,7 +239,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 6. Download the exact Terraform Plan
+      # 6. Download exact Terraform Plan
       # --------------------------------------------------------
 
       - name: Download Terraform Plan
@@ -203,7 +251,45 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 7. Apply the approved Terraform Plan
+      # 7. Download exact Lambda ZIP
+      # --------------------------------------------------------
+      #
+      # This fixes:
+      #
+      # Error: reading ZIP file
+      # open ./lambda_function.zip:
+      # no such file or directory
+      #
+      # The ZIP generated during Terraform Plan is restored
+      # into the terraform directory before Apply.
+      # --------------------------------------------------------
+
+      - name: Download Lambda package
+        uses: actions/download-artifact@v4
+
+        with:
+          name: lambda-package
+          path: terraform
+
+
+      # --------------------------------------------------------
+      # 8. Verify Terraform Plan exists
+      # --------------------------------------------------------
+
+      - name: Verify Terraform Plan
+        run: ls -lh tfplan
+
+
+      # --------------------------------------------------------
+      # 9. Verify Lambda package exists
+      # --------------------------------------------------------
+
+      - name: Verify Lambda package
+        run: ls -lh lambda_function.zip
+
+
+      # --------------------------------------------------------
+      # 10. Apply the approved Terraform Plan
       # --------------------------------------------------------
 
       - name: Terraform Apply
