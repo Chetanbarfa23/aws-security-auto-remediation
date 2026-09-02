@@ -15,6 +15,10 @@ permissions:
 
 jobs:
 
+  # ============================================================
+  # CI - Terraform Plan
+  # ============================================================
+
   terraform:
 
     runs-on: ubuntu-latest
@@ -90,4 +94,117 @@ jobs:
       # --------------------------------------------------------
 
       - name: Terraform Plan
-        run: terraform plan
+        run: terraform plan -out=tfplan
+
+
+      # --------------------------------------------------------
+      # 9. Upload exact Terraform Plan
+      # --------------------------------------------------------
+
+      - name: Upload Terraform Plan
+        uses: actions/upload-artifact@v4
+
+        with:
+          name: terraform-plan
+          path: terraform/tfplan
+
+
+  # ============================================================
+  # CD - Terraform Apply
+  # ============================================================
+
+  apply:
+
+    # ----------------------------------------------------------
+    # Apply ONLY after a push to main.
+    # Pull Requests can plan but cannot deploy.
+    # ----------------------------------------------------------
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    # Apply starts only after Terraform Plan succeeds.
+    needs: terraform
+
+    runs-on: ubuntu-latest
+
+    # ----------------------------------------------------------
+    # Production Environment
+    # ----------------------------------------------------------
+    #
+    # GitHub will apply the protection rules configured for
+    # the "production" environment.
+    #
+    # This can require manual approval before deployment.
+    # ----------------------------------------------------------
+
+    environment:
+      name: production
+
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+
+      # --------------------------------------------------------
+      # 1. Checkout repository
+      # --------------------------------------------------------
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      # --------------------------------------------------------
+      # 2. Install Terraform
+      # --------------------------------------------------------
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+
+      # --------------------------------------------------------
+      # 3. Configure AWS using GitHub OIDC
+      # --------------------------------------------------------
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+
+        with:
+          role-to-assume: arn:aws:iam::438546837574:role/GitHubActionsSecurityAutomationRole
+          aws-region: ap-south-1
+
+
+      # --------------------------------------------------------
+      # 4. Verify AWS authentication
+      # --------------------------------------------------------
+
+      - name: Check AWS identity
+        run: aws sts get-caller-identity
+
+
+      # --------------------------------------------------------
+      # 5. Terraform initialization
+      # --------------------------------------------------------
+
+      - name: Terraform Init
+        run: terraform init
+
+
+      # --------------------------------------------------------
+      # 6. Download the exact Terraform Plan
+      # --------------------------------------------------------
+
+      - name: Download Terraform Plan
+        uses: actions/download-artifact@v4
+
+        with:
+          name: terraform-plan
+          path: terraform
+
+
+      # --------------------------------------------------------
+      # 7. Apply the approved Terraform Plan
+      # --------------------------------------------------------
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
