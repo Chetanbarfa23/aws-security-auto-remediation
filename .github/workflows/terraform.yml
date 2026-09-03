@@ -70,11 +70,6 @@ jobs:
       - name: Check AWS identity
         run: aws sts get-caller-identity
 
-      - name: Test Lambda Permission
-        run: |
-          aws lambda get-function-event-invoke-config \
-            --function-name SecurityAutoRemediationFunction
-
       # --------------------------------------------------------
       # 5. Build Lambda deployment package
       # --------------------------------------------------------
