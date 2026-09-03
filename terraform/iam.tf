@@ -140,10 +140,6 @@ resource "aws_iam_role_policy" "github_actions" {
       # ========================================================
       # IAM Permissions
       # ========================================================
-      #
-      # IAM is sensitive, so we limit these permissions to
-      # the roles used by this project.
-      # ========================================================
 
       {
         Effect = "Allow"
@@ -189,10 +185,6 @@ resource "aws_iam_role_policy" "github_actions" {
       # ========================================================
       # SQS Permissions
       # ========================================================
-      #
-      # Terraform needs these permissions to create and manage
-      # the Security Auto-Remediation Dead-Letter Queue.
-      # ========================================================
 
       {
         Effect = "Allow"
@@ -217,7 +209,7 @@ resource "aws_iam_role_policy" "github_actions" {
       # ========================================================
       #
       # Terraform needs these permissions to create, update,
-      # describe and delete CloudWatch alarms.
+      # describe, tag and delete CloudWatch alarms.
       # ========================================================
 
       {
@@ -226,7 +218,8 @@ resource "aws_iam_role_policy" "github_actions" {
         Action = [
           "cloudwatch:PutMetricAlarm",
           "cloudwatch:DeleteAlarms",
-          "cloudwatch:DescribeAlarms"
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:ListTagsForResource"
         ]
 
         Resource = "*"
@@ -235,10 +228,6 @@ resource "aws_iam_role_policy" "github_actions" {
 
       # ========================================================
       # SNS Permissions
-      # ========================================================
-      #
-      # Terraform needs these permissions to create and manage
-      # the security alert SNS topic and email subscription.
       # ========================================================
 
       {
@@ -266,10 +255,6 @@ resource "aws_iam_role_policy" "github_actions" {
       # Terraform S3 Remote State Permissions
       # ========================================================
 
-      # --------------------------------------------------------
-      # Allow Terraform to access the state bucket
-      # --------------------------------------------------------
-
       {
         Effect = "Allow"
 
@@ -281,9 +266,9 @@ resource "aws_iam_role_policy" "github_actions" {
       },
 
 
-      # --------------------------------------------------------
-      # Allow Terraform to read/write the state file
-      # --------------------------------------------------------
+      # ========================================================
+      # Terraform State File Permissions
+      # ========================================================
 
       {
         Effect = "Allow"
@@ -298,9 +283,9 @@ resource "aws_iam_role_policy" "github_actions" {
       },
 
 
-      # --------------------------------------------------------
-      # Allow Terraform to use the S3 lock file
-      # --------------------------------------------------------
+      # ========================================================
+      # Terraform S3 Lock File Permissions
+      # ========================================================
 
       {
         Effect = "Allow"
