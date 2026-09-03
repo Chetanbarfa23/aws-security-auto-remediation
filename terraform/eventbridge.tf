@@ -1,5 +1,5 @@
 # ============================================================
-# EventBridge - Security Event Bus to transfer the events creating eventbridge bus
+# EventBridge - Security Event Bus
 # ============================================================
 
 resource "aws_cloudwatch_event_bus" "security" {
@@ -8,7 +8,7 @@ resource "aws_cloudwatch_event_bus" "security" {
 
 
 # ============================================================
-# EventBridge - Security Finding Rule. creating cloudwatch 
+# EventBridge - Security Finding Rule
 # ============================================================
 
 resource "aws_cloudwatch_event_rule" "security_finding" {
@@ -27,19 +27,40 @@ resource "aws_cloudwatch_event_rule" "security_finding" {
   })
 }
 
+
 # ============================================================
-#   when rule match send this to lembda  EventBridge → Lambda Target
+# EventBridge → Lambda Target
 # ============================================================
 
 resource "aws_cloudwatch_event_target" "security_lambda" {
   rule = aws_cloudwatch_event_rule.security_finding.name
 
-  event_bus_name = "security-events-bus"
+  event_bus_name = aws_cloudwatch_event_bus.security.name
 
   target_id = "SecurityRemediationLambda"
 
   arn = aws_lambda_function.security_remediation.arn
+
+
+  # ----------------------------------------------------------
+  # Retry Configuration
+  # ----------------------------------------------------------
+
+  retry_policy {
+    maximum_event_age_in_seconds = 3600
+    maximum_retry_attempts       = 3
+  }
+
+
+  # ----------------------------------------------------------
+  # Dead-Letter Queue
+  # ----------------------------------------------------------
+
+  dead_letter_config {
+    arn = aws_sqs_queue.security_dlq.arn
+  }
 }
+
 
 # ============================================================
 # Allow EventBridge to Invoke Lambda
