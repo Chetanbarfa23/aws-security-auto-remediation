@@ -71,6 +71,12 @@ resource "aws_iam_role_policy" "github_actions" {
           "lambda:GetFunction",
           "lambda:ListVersionsByFunction",
           "lambda:GetFunctionCodeSigningConfig",
+
+          # Lambda asynchronous invocation configuration
+          "lambda:GetFunctionEventInvokeConfig",
+          "lambda:PutFunctionEventInvokeConfig",
+          "lambda:DeleteFunctionEventInvokeConfig",
+
           "lambda:CreateFunction",
           "lambda:UpdateFunctionCode",
           "lambda:UpdateFunctionConfiguration",
