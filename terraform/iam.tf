@@ -213,6 +213,56 @@ resource "aws_iam_role_policy" "github_actions" {
 
 
       # ========================================================
+      # CloudWatch Alarm Permissions
+      # ========================================================
+      #
+      # Terraform needs these permissions to create, update,
+      # describe and delete CloudWatch alarms.
+      # ========================================================
+
+      {
+        Effect = "Allow"
+
+        Action = [
+          "cloudwatch:PutMetricAlarm",
+          "cloudwatch:DeleteAlarms",
+          "cloudwatch:DescribeAlarms"
+        ]
+
+        Resource = "*"
+      },
+
+
+      # ========================================================
+      # SNS Permissions
+      # ========================================================
+      #
+      # Terraform needs these permissions to create and manage
+      # the security alert SNS topic and email subscription.
+      # ========================================================
+
+      {
+        Effect = "Allow"
+
+        Action = [
+          "sns:CreateTopic",
+          "sns:DeleteTopic",
+          "sns:GetTopicAttributes",
+          "sns:SetTopicAttributes",
+          "sns:Subscribe",
+          "sns:Unsubscribe",
+          "sns:GetSubscriptionAttributes",
+          "sns:ListSubscriptionsByTopic",
+          "sns:TagResource",
+          "sns:UntagResource",
+          "sns:ListTagsForResource"
+        ]
+
+        Resource = "*"
+      },
+
+
+      # ========================================================
       # Terraform S3 Remote State Permissions
       # ========================================================
 
