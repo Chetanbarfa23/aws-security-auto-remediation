@@ -181,6 +181,32 @@ resource "aws_iam_role_policy" "github_actions" {
 
 
       # ========================================================
+      # SQS Permissions
+      # ========================================================
+      #
+      # Terraform needs these permissions to create and manage
+      # the Security Auto-Remediation Dead-Letter Queue.
+      # ========================================================
+
+      {
+        Effect = "Allow"
+
+        Action = [
+          "sqs:CreateQueue",
+          "sqs:DeleteQueue",
+          "sqs:GetQueueAttributes",
+          "sqs:GetQueueUrl",
+          "sqs:SetQueueAttributes",
+          "sqs:ListQueueTags",
+          "sqs:TagQueue",
+          "sqs:UntagQueue"
+        ]
+
+        Resource = "*"
+      },
+
+
+      # ========================================================
       # Terraform S3 Remote State Permissions
       # ========================================================
 
