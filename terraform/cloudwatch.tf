@@ -2,11 +2,6 @@
 # CloudWatch Monitoring
 # ============================================================
 
-
-# ============================================================
-# Lambda Error Alarm
-# ============================================================
-
 resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
 
   alarm_name = "security-remediation-lambda-errors"
@@ -33,16 +28,16 @@ resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
     FunctionName = aws_lambda_function.security_remediation.function_name
   }
 
-  # Send alarm notification to SNS
   alarm_actions = [
     aws_sns_topic.security_alerts.arn
   ]
+
+  depends_on = [
+    aws_iam_role_policy.github_actions,
+    aws_sns_topic.security_alerts
+  ]
 }
 
-
-# ============================================================
-# SQS Dead-Letter Queue Alarm
-# ============================================================
 
 resource "aws_cloudwatch_metric_alarm" "security_dlq_messages" {
 
@@ -70,8 +65,12 @@ resource "aws_cloudwatch_metric_alarm" "security_dlq_messages" {
     QueueName = aws_sqs_queue.security_dlq.name
   }
 
-  # Send alarm notification to SNS
   alarm_actions = [
     aws_sns_topic.security_alerts.arn
+  ]
+
+  depends_on = [
+    aws_iam_role_policy.github_actions,
+    aws_sns_topic.security_alerts
   ]
 }

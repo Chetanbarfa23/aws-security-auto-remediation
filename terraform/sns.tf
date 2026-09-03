@@ -11,6 +11,10 @@ resource "aws_sns_topic" "security_alerts" {
     Environment = "dev"
     ManagedBy   = "Terraform"
   }
+
+  depends_on = [
+    aws_iam_role_policy.github_actions
+  ]
 }
 
 
@@ -25,4 +29,8 @@ resource "aws_sns_topic_subscription" "security_email" {
   protocol = "email"
 
   endpoint = "barfachetan5@gmail.com"
+
+  depends_on = [
+    aws_iam_role_policy.github_actions
+  ]
 }
