@@ -33,6 +33,7 @@ jobs:
       run:
         working-directory: terraform
 
+
     steps:
 
       # --------------------------------------------------------
@@ -59,17 +60,36 @@ jobs:
         shell: bash
         working-directory: .
         run: |
+
           TOKEN=$(curl -s \
             -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" \
             | jq -r '.value')
 
-          echo "OIDC TOKEN CLAIMS:"
-          echo "$TOKEN" | cut -d "." -f2 | base64 -d 2>/dev/null || true
+          echo "=========================================="
+          echo "GitHub OIDC Token Claims"
+          echo "=========================================="
+
+          PAYLOAD=$(echo "$TOKEN" | cut -d "." -f2)
+
+          PAYLOAD=$(echo "$PAYLOAD" | tr '_-' '/+')
+
+          case $((${#PAYLOAD} % 4)) in
+            2)
+              PAYLOAD="${PAYLOAD}=="
+              ;;
+            3)
+              PAYLOAD="${PAYLOAD}="
+              ;;
+          esac
+
+          echo "$PAYLOAD" | base64 -d | jq .
+
+          echo "=========================================="
 
 
       # --------------------------------------------------------
-      # 4. Configure AWS using GitHub OIDC
+      # 4. Configure AWS credentials using OIDC
       # --------------------------------------------------------
 
       - name: Configure AWS credentials
@@ -78,6 +98,8 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::438546837574:role/GitHubActionsSecurityAutomationRole
           aws-region: ap-south-1
+          audience: sts.amazonaws.com
+          role-session-name: GitHubActions-Terraform
 
 
       # --------------------------------------------------------
@@ -85,7 +107,8 @@ jobs:
       # --------------------------------------------------------
 
       - name: Check AWS identity
-        run: aws sts get-caller-identity
+        run: |
+          aws sts get-caller-identity
 
 
       # --------------------------------------------------------
@@ -96,7 +119,9 @@ jobs:
         working-directory: .
         run: |
           rm -f terraform/lambda_function.zip
+
           cd lambda
+
           zip -j ../terraform/lambda_function.zip handler.py
 
 
@@ -115,7 +140,8 @@ jobs:
       # --------------------------------------------------------
 
       - name: Terraform Init
-        run: terraform init
+        run: |
+          terraform init
 
 
       # --------------------------------------------------------
@@ -123,7 +149,8 @@ jobs:
       # --------------------------------------------------------
 
       - name: Terraform Format Check
-        run: terraform fmt -check
+        run: |
+          terraform fmt -check
 
 
       # --------------------------------------------------------
@@ -131,7 +158,8 @@ jobs:
       # --------------------------------------------------------
 
       - name: Terraform Validate
-        run: terraform validate
+        run: |
+          terraform validate
 
 
       # --------------------------------------------------------
@@ -139,11 +167,12 @@ jobs:
       # --------------------------------------------------------
 
       - name: Terraform Plan
-        run: terraform plan -out=tfplan
+        run: |
+          terraform plan -out=tfplan
 
 
       # --------------------------------------------------------
-      # 12. Upload exact Terraform Plan
+      # 12. Upload Terraform Plan
       # --------------------------------------------------------
 
       - name: Upload Terraform Plan
@@ -156,7 +185,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 13. Upload exact Lambda package
+      # 13. Upload Lambda package
       # --------------------------------------------------------
 
       - name: Upload Lambda package
@@ -175,7 +204,7 @@ jobs:
   apply:
 
     # ----------------------------------------------------------
-    # Apply ONLY after a push to main.
+    # Apply ONLY after push to main
     # ----------------------------------------------------------
 
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -224,17 +253,36 @@ jobs:
         shell: bash
         working-directory: .
         run: |
+
           TOKEN=$(curl -s \
             -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" \
             | jq -r '.value')
 
-          echo "OIDC TOKEN CLAIMS:"
-          echo "$TOKEN" | cut -d "." -f2 | base64 -d 2>/dev/null || true
+          echo "=========================================="
+          echo "GitHub OIDC Token Claims"
+          echo "=========================================="
+
+          PAYLOAD=$(echo "$TOKEN" | cut -d "." -f2)
+
+          PAYLOAD=$(echo "$PAYLOAD" | tr '_-' '/+')
+
+          case $((${#PAYLOAD} % 4)) in
+            2)
+              PAYLOAD="${PAYLOAD}=="
+              ;;
+            3)
+              PAYLOAD="${PAYLOAD}="
+              ;;
+          esac
+
+          echo "$PAYLOAD" | base64 -d | jq .
+
+          echo "=========================================="
 
 
       # --------------------------------------------------------
-      # 4. Configure AWS using GitHub OIDC
+      # 4. Configure AWS credentials using OIDC
       # --------------------------------------------------------
 
       - name: Configure AWS credentials
@@ -243,6 +291,8 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::438546837574:role/GitHubActionsSecurityAutomationRole
           aws-region: ap-south-1
+          audience: sts.amazonaws.com
+          role-session-name: GitHubActions-Terraform-Apply
 
 
       # --------------------------------------------------------
@@ -250,7 +300,8 @@ jobs:
       # --------------------------------------------------------
 
       - name: Check AWS identity
-        run: aws sts get-caller-identity
+        run: |
+          aws sts get-caller-identity
 
 
       # --------------------------------------------------------
@@ -258,11 +309,12 @@ jobs:
       # --------------------------------------------------------
 
       - name: Terraform Init
-        run: terraform init
+        run: |
+          terraform init
 
 
       # --------------------------------------------------------
-      # 7. Download exact Terraform Plan
+      # 7. Download Terraform Plan
       # --------------------------------------------------------
 
       - name: Download Terraform Plan
@@ -274,7 +326,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 8. Download exact Lambda package
+      # 8. Download Lambda package
       # --------------------------------------------------------
 
       - name: Download Lambda package
@@ -290,7 +342,8 @@ jobs:
       # --------------------------------------------------------
 
       - name: Verify Terraform Plan
-        run: ls -lh tfplan
+        run: |
+          ls -lh tfplan
 
 
       # --------------------------------------------------------
@@ -304,8 +357,9 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 11. Apply the exact approved Terraform Plan
+      # 11. Apply Terraform Plan
       # --------------------------------------------------------
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve tfplan
+        run: |
+          terraform apply -auto-approve tfplan
