@@ -52,7 +52,24 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 3. Configure AWS using GitHub OIDC
+      # 3. Debug OIDC Token Claims
+      # --------------------------------------------------------
+
+      - name: Debug OIDC token claims
+        shell: bash
+        working-directory: .
+        run: |
+          TOKEN=$(curl -s \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" \
+            | jq -r '.value')
+
+          echo "OIDC TOKEN CLAIMS:"
+          echo "$TOKEN" | cut -d "." -f2 | base64 -d 2>/dev/null || true
+
+
+      # --------------------------------------------------------
+      # 4. Configure AWS using GitHub OIDC
       # --------------------------------------------------------
 
       - name: Configure AWS credentials
@@ -64,23 +81,15 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 4. Verify AWS authentication
+      # 5. Verify AWS authentication
       # --------------------------------------------------------
 
       - name: Check AWS identity
         run: aws sts get-caller-identity
 
+
       # --------------------------------------------------------
-      # 5. Build Lambda deployment package
-      # --------------------------------------------------------
-      #
-      # GitHub Actions creates the ZIP.
-      #
-      # Source:
-      # lambda/handler.py
-      #
-      # Output:
-      # terraform/lambda_function.zip
+      # 6. Build Lambda deployment package
       # --------------------------------------------------------
 
       - name: Build Lambda package
@@ -92,7 +101,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 6. Verify Lambda package
+      # 7. Verify Lambda package
       # --------------------------------------------------------
 
       - name: Verify Lambda package
@@ -102,7 +111,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 7. Terraform initialization
+      # 8. Terraform initialization
       # --------------------------------------------------------
 
       - name: Terraform Init
@@ -110,7 +119,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 8. Terraform formatting check
+      # 9. Terraform formatting check
       # --------------------------------------------------------
 
       - name: Terraform Format Check
@@ -118,7 +127,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 9. Terraform validation
+      # 10. Terraform validation
       # --------------------------------------------------------
 
       - name: Terraform Validate
@@ -126,10 +135,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 10. Terraform Plan
-      # --------------------------------------------------------
-      #
-      # Terraform uses the ZIP created above.
+      # 11. Terraform Plan
       # --------------------------------------------------------
 
       - name: Terraform Plan
@@ -137,7 +143,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 11. Upload exact Terraform Plan
+      # 12. Upload Terraform Plan
       # --------------------------------------------------------
 
       - name: Upload Terraform Plan
@@ -150,7 +156,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 12. Upload exact Lambda package
+      # 13. Upload Lambda package
       # --------------------------------------------------------
 
       - name: Upload Lambda package
@@ -213,7 +219,24 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 3. Configure AWS using GitHub OIDC
+      # 3. Debug OIDC Token Claims
+      # --------------------------------------------------------
+
+      - name: Debug OIDC token claims
+        shell: bash
+        working-directory: .
+        run: |
+          TOKEN=$(curl -s \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" \
+            | jq -r '.value')
+
+          echo "OIDC TOKEN CLAIMS:"
+          echo "$TOKEN" | cut -d "." -f2 | base64 -d 2>/dev/null || true
+
+
+      # --------------------------------------------------------
+      # 4. Configure AWS using GitHub OIDC
       # --------------------------------------------------------
 
       - name: Configure AWS credentials
@@ -225,7 +248,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 4. Verify AWS authentication
+      # 5. Verify AWS authentication
       # --------------------------------------------------------
 
       - name: Check AWS identity
@@ -233,7 +256,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 5. Terraform initialization
+      # 6. Terraform initialization
       # --------------------------------------------------------
 
       - name: Terraform Init
@@ -241,7 +264,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 6. Download exact Terraform Plan
+      # 7. Download Terraform Plan
       # --------------------------------------------------------
 
       - name: Download Terraform Plan
@@ -253,7 +276,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 7. Download exact Lambda package
+      # 8. Download Lambda package
       # --------------------------------------------------------
 
       - name: Download Lambda package
@@ -265,7 +288,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 8. Verify Terraform Plan
+      # 9. Verify Terraform Plan
       # --------------------------------------------------------
 
       - name: Verify Terraform Plan
@@ -273,7 +296,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 9. Verify Lambda package
+      # 10. Verify Lambda package
       # --------------------------------------------------------
 
       - name: Verify Lambda package
@@ -283,7 +306,7 @@ jobs:
 
 
       # --------------------------------------------------------
-      # 10. Apply the exact approved Terraform Plan
+      # 11. Apply the exact Terraform Plan
       # --------------------------------------------------------
 
       - name: Terraform Apply
