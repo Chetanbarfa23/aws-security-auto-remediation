@@ -20,14 +20,14 @@ locals {
   dashboard_region = "ap-south-1"
 
   lambda_function_name = "SecurityAutoRemediationFunction"
-  dlq_queue_name        = "security-auto-remediation-dlq"
+  dlq_queue_name       = "security-auto-remediation-dlq"
 
   lambda_error_alarm_name       = "security-remediation-lambda-errors"
-  dlq_alarm_name                 = "security-remediation-dlq-messages"
-  failed_remediation_alarm_name  = "security-remediation-failed-remediations"
+  dlq_alarm_name                = "security-remediation-dlq-messages"
+  failed_remediation_alarm_name = "security-remediation-failed-remediations"
 
-  lambda_error_alarm_arn      = "arn:aws:cloudwatch:${local.dashboard_region}:${data.aws_caller_identity.current.account_id}:alarm:${local.lambda_error_alarm_name}"
-  dlq_alarm_arn               = "arn:aws:cloudwatch:${local.dashboard_region}:${data.aws_caller_identity.current.account_id}:alarm:${local.dlq_alarm_name}"
+  lambda_error_alarm_arn       = "arn:aws:cloudwatch:${local.dashboard_region}:${data.aws_caller_identity.current.account_id}:alarm:${local.lambda_error_alarm_name}"
+  dlq_alarm_arn                = "arn:aws:cloudwatch:${local.dashboard_region}:${data.aws_caller_identity.current.account_id}:alarm:${local.dlq_alarm_name}"
   failed_remediation_alarm_arn = "arn:aws:cloudwatch:${local.dashboard_region}:${data.aws_caller_identity.current.account_id}:alarm:${local.failed_remediation_alarm_name}"
 
   custom_ns = "SecurityAutoRemediation"
@@ -69,42 +69,42 @@ resource "aws_cloudwatch_dashboard" "security_auto_remediation_dashboard" {
       {
         type = "metric", x = 0, y = 8, width = 8, height = 4,
         properties = {
-          title = "🚨 Security Events Received", region = local.dashboard_region, view = "singleValue", period = 3600, stat = "Sum",
+          title   = "🚨 Security Events Received", region = local.dashboard_region, view = "singleValue", period = 3600, stat = "Sum",
           metrics = [[local.custom_ns, "SecurityFindingsReceived"]]
         }
       },
       {
         type = "metric", x = 8, y = 8, width = 8, height = 4,
         properties = {
-          title = "⚡ Lambda Executions", region = local.dashboard_region, view = "singleValue", period = 3600, stat = "Sum",
+          title   = "⚡ Lambda Executions", region = local.dashboard_region, view = "singleValue", period = 3600, stat = "Sum",
           metrics = [["AWS/Lambda", "Invocations", "FunctionName", local.lambda_function_name]]
         }
       },
       {
         type = "metric", x = 16, y = 8, width = 8, height = 4,
         properties = {
-          title = "✅ Successful Remediations", region = local.dashboard_region, view = "singleValue", period = 3600, stat = "Sum",
+          title   = "✅ Successful Remediations", region = local.dashboard_region, view = "singleValue", period = 3600, stat = "Sum",
           metrics = [[local.custom_ns, "SuccessfulRemediations", { color = "#2ca02c" }]]
         }
       },
       {
         type = "metric", x = 0, y = 12, width = 8, height = 4,
         properties = {
-          title = "❌ Failed Remediations", region = local.dashboard_region, view = "singleValue", period = 3600, stat = "Sum",
+          title   = "❌ Failed Remediations", region = local.dashboard_region, view = "singleValue", period = 3600, stat = "Sum",
           metrics = [[local.custom_ns, "FailedRemediations", { color = "#d62728" }]]
         }
       },
       {
         type = "metric", x = 8, y = 12, width = 8, height = 4,
         properties = {
-          title = "⚠️ DLQ Messages", region = local.dashboard_region, view = "singleValue", period = 300, stat = "Maximum",
+          title   = "⚠️ DLQ Messages", region = local.dashboard_region, view = "singleValue", period = 300, stat = "Maximum",
           metrics = [["AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", local.dlq_queue_name, { color = "#ff7f0e" }]]
         }
       },
       {
         type = "metric", x = 16, y = 12, width = 8, height = 4,
         properties = {
-          title = "📧 Notifications Sent", region = local.dashboard_region, view = "singleValue", period = 3600, stat = "Sum",
+          title   = "📧 Notifications Sent", region = local.dashboard_region, view = "singleValue", period = 3600, stat = "Sum",
           metrics = [[local.custom_ns, "NotificationsSent"]]
         }
       },
@@ -122,7 +122,7 @@ resource "aws_cloudwatch_dashboard" "security_auto_remediation_dashboard" {
         type = "metric", x = 0, y = 17, width = 24, height = 6,
         properties = {
           title = "Security Findings vs Successful vs Failed Remediations", region = local.dashboard_region,
-          view = "timeSeries", stacked = false, period = 300, stat = "Sum",
+          view  = "timeSeries", stacked = false, period = 300, stat = "Sum",
           metrics = [
             [local.custom_ns, "SecurityFindingsReceived", { label = "Findings Received", color = "#1f77b4" }],
             [local.custom_ns, "SuccessfulRemediations", { label = "Successful Remediations", color = "#2ca02c" }],
@@ -143,21 +143,21 @@ resource "aws_cloudwatch_dashboard" "security_auto_remediation_dashboard" {
       {
         type = "metric", x = 0, y = 24, width = 8, height = 6,
         properties = {
-          title = "⚡ Lambda Executions", region = local.dashboard_region, view = "timeSeries", period = 300, stat = "Sum",
+          title   = "⚡ Lambda Executions", region = local.dashboard_region, view = "timeSeries", period = 300, stat = "Sum",
           metrics = [["AWS/Lambda", "Invocations", "FunctionName", local.lambda_function_name]]
         }
       },
       {
         type = "metric", x = 8, y = 24, width = 8, height = 6,
         properties = {
-          title = "🔴 Lambda Errors", region = local.dashboard_region, view = "timeSeries", period = 300, stat = "Sum",
+          title   = "🔴 Lambda Errors", region = local.dashboard_region, view = "timeSeries", period = 300, stat = "Sum",
           metrics = [["AWS/Lambda", "Errors", "FunctionName", local.lambda_function_name, { color = "#d62728" }]]
         }
       },
       {
         type = "metric", x = 16, y = 24, width = 8, height = 6,
         properties = {
-          title = "⏱️ Lambda Response Time", region = local.dashboard_region, view = "timeSeries", period = 300, stat = "Average",
+          title   = "⏱️ Lambda Response Time", region = local.dashboard_region, view = "timeSeries", period = 300, stat = "Average",
           metrics = [["AWS/Lambda", "Duration", "FunctionName", local.lambda_function_name, { color = "#9467bd" }]]
         }
       },
@@ -197,7 +197,7 @@ resource "aws_cloudwatch_dashboard" "security_auto_remediation_dashboard" {
       {
         type = "metric", x = 0, y = 38, width = 12, height = 6,
         properties = {
-          title = "⚠️ DLQ Message Count", region = local.dashboard_region, view = "timeSeries", period = 300, stat = "Maximum",
+          title   = "⚠️ DLQ Message Count", region = local.dashboard_region, view = "timeSeries", period = 300, stat = "Maximum",
           metrics = [["AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", local.dlq_queue_name, { color = "#ff7f0e" }]]
         }
       },
@@ -215,7 +215,7 @@ resource "aws_cloudwatch_dashboard" "security_auto_remediation_dashboard" {
       {
         type = "metric", x = 0, y = 45, width = 24, height = 6,
         properties = {
-          title = "📧 Notifications Sent Over Time", region = local.dashboard_region, view = "timeSeries", period = 300, stat = "Sum",
+          title   = "📧 Notifications Sent Over Time", region = local.dashboard_region, view = "timeSeries", period = 300, stat = "Sum",
           metrics = [[local.custom_ns, "NotificationsSent"]]
         }
       }
