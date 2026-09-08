@@ -1,0 +1,8 @@
+[
+  {
+    "Source": "security.simulator",
+    "DetailType": "Security Finding",
+    "EventBusName": "security-events-bus",
+    "Detail": "{\"severity\":\"HIGH\",\"finding_type\":\"OpenSSH\",\"resource\":\"sg-09307856b254e483d\"}"
+  }
+]

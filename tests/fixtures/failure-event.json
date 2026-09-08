@@ -1,0 +1,9 @@
+{
+  "source": "security.simulator",
+  "detail-type": "Security Finding",
+  "detail": {
+    "severity": "HIGH",
+    "finding_type": "OpenSSH",
+    "resource": "sg-INVALID123456"
+  }
+}

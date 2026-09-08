@@ -1,27 +1,50 @@
+cat > .gitignore <<'EOF'
+# ========================================
 # Python
-venv/
-.venv/
+# ========================================
 __pycache__/
-*.pyc
+*.py[cod]
+*.so
+.venv/
+venv/
+env/
 
-# Environment variables
+# ========================================
+# Terraform
+# ========================================
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform plan files
+*.tfplan
+
+# ========================================
+# Lambda build artifacts
+# ========================================
+*.zip
+
+# ========================================
+# Environment files
+# ========================================
 .env
 .env.*
 
-# pytest
-.pytest_cache/
-
-# Terraform
-terraform/.terraform/
-terraform/*.tfstate
-terraform/*.tfstate.*
-terraform/*.tfvars
-terraform/*.tfvars.json
-terraform/*.tfplan
-terraform/.terraform.lock.hcl
-
+# ========================================
 # macOS
+# ========================================
 .DS_Store
 
-# Logs
-*.log
+# ========================================
+# IDE
+# ========================================
+.vscode/
+.idea/
+EOF
