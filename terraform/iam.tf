@@ -36,9 +36,9 @@ resource "aws_iam_role" "github_actions" {
 
             "token.actions.githubusercontent.com:sub" = [
 
-              "repo:Chetanbarfa23/aws-security-auto-remediation:ref:refs/heads/main",
+              "repo:Chetanbarfa23@182407639/aws-security-auto-remediation@1336951937:ref:refs/heads/main",
 
-              "repo:Chetanbarfa23/aws-security-auto-remediation:environment:production"
+              "repo:Chetanbarfa23@182407639/aws-security-auto-remediation@1336951937:environment:production"
 
             ]
 
