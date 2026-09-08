@@ -16,7 +16,10 @@ cloudwatch = boto3.client("cloudwatch")
 # CONFIGURATION
 # ============================================================
 
-SNS_TOPIC_ARN = "arn:aws:sns:ap-south-1:438546837574:security-remediation-alerts"
+SNS_TOPIC_ARN = (
+    "arn:aws:sns:ap-south-1:438546837574:"
+    "security-remediation-alerts"
+)
 
 METRIC_NAMESPACE = "SecurityAutoRemediation"
 
@@ -26,7 +29,6 @@ METRIC_NAMESPACE = "SecurityAutoRemediation"
 # ============================================================
 
 def publish_metric(metric_name, value=1):
-
     """
     Publish custom metrics to Amazon CloudWatch.
     """
@@ -65,7 +67,6 @@ def publish_metric(metric_name, value=1):
 # ============================================================
 
 def send_notification(subject, message):
-
     """
     Send security remediation notification through SNS.
     """
@@ -78,7 +79,9 @@ def send_notification(subject, message):
             Message=message
         )
 
-        print("=== SNS NOTIFICATION SENT ===")
+        print(
+            "=== SNS NOTIFICATION SENT ==="
+        )
 
         print(
             f"Message ID: "
@@ -86,6 +89,7 @@ def send_notification(subject, message):
         )
 
         # Publish notification success metric
+
         publish_metric(
             "NotificationsSent"
         )
@@ -104,12 +108,13 @@ def send_notification(subject, message):
         )
 
         # Publish notification failure metric
+
         publish_metric(
             "NotificationFailures"
         )
 
-        # Do not fail remediation
-        # if notification fails
+        # Notification failure should not
+        # fail the remediation process.
 
         return False
 
@@ -127,7 +132,8 @@ def lambda_handler(event, context):
     print(
         json.dumps(
             event,
-            indent=2
+            indent=2,
+            default=str
         )
     )
 
@@ -150,21 +156,61 @@ def lambda_handler(event, context):
         {}
     )
 
-    # IMPORTANT:
-    # These keys match your existing
-    # security-finding-event.json file.
 
-    severity = detail.get(
-        "severity"
+    # ========================================================
+    # EXTRACT EVENT VALUES
+    #
+    # Primary format used by EventBridge:
+    #
+    # {
+    #   "resource_type": "AWS::EC2::SecurityGroup",
+    #   "resource_id": "sg-xxxxxxxx",
+    #   "finding_type": "OPEN_SSH",
+    #   "severity": "HIGH"
+    # }
+    #
+    # Additional formats are supported for compatibility.
+    # ========================================================
+
+    severity = (
+        detail.get("severity")
+        or detail.get("Severity")
     )
 
-    finding_type = detail.get(
-        "finding_type"
+    finding_type = (
+        detail.get("finding_type")
+        or detail.get("findingType")
+        or detail.get("type")
     )
 
-    security_group_id = detail.get(
-        "resource"
+    security_group_id = (
+        detail.get("resource_id")
+        or detail.get("resourceId")
+        or detail.get("resource")
     )
+
+    resource_type = (
+        detail.get("resource_type")
+        or detail.get("resourceType")
+    )
+
+
+    # ========================================================
+    # NORMALIZE VALUES
+    # ========================================================
+
+    if severity:
+
+        severity = str(
+            severity
+        ).upper()
+
+
+    if finding_type:
+
+        finding_type = str(
+            finding_type
+        ).upper()
 
 
     print(
@@ -176,12 +222,16 @@ def lambda_handler(event, context):
     )
 
     print(
-        f"Resource: {security_group_id}"
+        f"Resource Type: {resource_type}"
+    )
+
+    print(
+        f"Security Group ID: {security_group_id}"
     )
 
 
     # ========================================================
-    # VALIDATION
+    # VALIDATE SEVERITY
     # ========================================================
 
     if severity != "HIGH":
@@ -192,29 +242,56 @@ def lambda_handler(event, context):
         )
 
         return {
+
             "statusCode": 200,
+
             "body": (
                 "Finding ignored - "
                 "severity is not HIGH"
             )
+
         }
 
 
-    if finding_type != "OpenSSH":
+    # ========================================================
+    # VALIDATE FINDING TYPE
+    #
+    # Supports:
+    #
+    # OPEN_SSH
+    # OPENSSH
+    # OPEN SSH
+    # ========================================================
+
+    supported_finding_types = [
+        "OPEN_SSH",
+        "OPENSSH",
+        "OPEN SSH"
+    ]
+
+
+    if finding_type not in supported_finding_types:
 
         print(
-            "Finding type is not OpenSSH. "
+            "Finding type is not supported. "
             "No remediation required."
         )
 
         return {
+
             "statusCode": 200,
+
             "body": (
                 "Finding ignored - "
                 "unsupported finding type"
             )
+
         }
 
+
+    # ========================================================
+    # VALIDATE SECURITY GROUP ID
+    # ========================================================
 
     if not security_group_id:
 
@@ -227,10 +304,13 @@ def lambda_handler(event, context):
         )
 
         return {
+
             "statusCode": 400,
+
             "body": (
                 "Security Group ID missing"
             )
+
         }
 
 
@@ -239,12 +319,17 @@ def lambda_handler(event, context):
     # ========================================================
 
     print(
-        "Finding validated. "
+        "Finding validated."
+    )
+
+    print(
         "Starting remediation..."
     )
 
 
-    # Publish remediation attempt metric
+    # ========================================================
+    # PUBLISH REMEDIATION ATTEMPT METRIC
+    # ========================================================
 
     publish_metric(
         "RemediationAttempts"
@@ -252,6 +337,11 @@ def lambda_handler(event, context):
 
 
     try:
+
+
+        # ====================================================
+        # GET SECURITY GROUP DETAILS
+        # ====================================================
 
         response = (
             ec2.describe_security_groups(
@@ -269,8 +359,17 @@ def lambda_handler(event, context):
         )
 
 
+        print(
+            f"Security Group Found: "
+            f"{security_group_id}"
+        )
+
+
+        remediation_performed = False
+
+
         # ====================================================
-        # CHECK SECURITY GROUP RULES
+        # CHECK SECURITY GROUP INGRESS RULES
         # ====================================================
 
         for permission in security_group.get(
@@ -279,7 +378,9 @@ def lambda_handler(event, context):
         ):
 
 
-            # Check SSH Port 22
+            # =================================================
+            # CHECK SSH PORT 22
+            # =================================================
 
             if (
 
@@ -302,13 +403,19 @@ def lambda_handler(event, context):
             ):
 
 
+                # =============================================
+                # CHECK IP RANGES
+                # =============================================
+
                 for ip_range in permission.get(
                     "IpRanges",
                     []
                 ):
 
 
-                    # Check public SSH access
+                    # =========================================
+                    # CHECK FOR PUBLIC SSH
+                    # =========================================
 
                     if ip_range.get(
                         "CidrIp"
@@ -316,14 +423,42 @@ def lambda_handler(event, context):
 
 
                         print(
-                            f"Open SSH found in "
+                            "================================"
+                        )
+
+                        print(
+                            "OPEN SSH DETECTED"
+                        )
+
+                        print(
+                            "================================"
+                        )
+
+                        print(
+                            f"Security Group: "
                             f"{security_group_id}"
                         )
 
+                        print(
+                            "Protocol: TCP"
+                        )
 
-                        # ====================================
-                        # REMOVE INSECURE SSH RULE
-                        # ====================================
+                        print(
+                            "Port: 22"
+                        )
+
+                        print(
+                            "Source: 0.0.0.0/0"
+                        )
+
+
+                        # =====================================
+                        # REMOVE ONLY THE PUBLIC SSH RULE
+                        #
+                        # Important:
+                        # We create a specific rule instead of
+                        # revoking the complete permission.
+                        # =====================================
 
                         ec2.revoke_security_group_ingress(
 
@@ -332,34 +467,59 @@ def lambda_handler(event, context):
                             ),
 
                             IpPermissions=[
-                                permission
+                                {
+                                    "IpProtocol": "tcp",
+
+                                    "FromPort": 22,
+
+                                    "ToPort": 22,
+
+                                    "IpRanges": [
+                                        {
+                                            "CidrIp": (
+                                                "0.0.0.0/0"
+                                            )
+                                        }
+                                    ]
+                                }
                             ]
 
                         )
 
 
+                        remediation_performed = True
+
+
                         print(
-                            "=== REMEDIATION SUCCESSFUL ==="
+                            "================================"
                         )
 
                         print(
-                            "Open SSH rule removed "
-                            "successfully"
+                            "REMEDIATION SUCCESSFUL"
+                        )
+
+                        print(
+                            "================================"
+                        )
+
+                        print(
+                            "Public SSH access removed "
+                            "successfully."
                         )
 
 
-                        # ====================================
+                        # =====================================
                         # CLOUDWATCH SUCCESS METRIC
-                        # ====================================
+                        # =====================================
 
                         publish_metric(
                             "SuccessfulRemediations"
                         )
 
 
-                        # ====================================
-                        # PREPARE SNS MESSAGE
-                        # ====================================
+                        # =====================================
+                        # PREPARE SNS NOTIFICATION
+                        # =====================================
 
                         subject = (
                             "Security Auto-Remediation Successful"
@@ -370,7 +530,9 @@ def lambda_handler(event, context):
 AWS SECURITY AUTO-REMEDIATION ALERT
 
 
+========================================
 SECURITY FINDING
+========================================
 
 Severity:
 {severity}
@@ -379,29 +541,45 @@ Finding Type:
 {finding_type}
 
 
+========================================
 AFFECTED RESOURCE
+========================================
 
 Security Group:
 {security_group_id}
 
+Resource Type:
+{resource_type}
 
+
+========================================
 REMEDIATION STATUS
+========================================
 
 SUCCESSFUL
 
 
+========================================
 ACTION TAKEN
+========================================
 
 Public SSH access was removed.
 
 Removed rule:
 
-Protocol: TCP
-Port: 22
-Source: 0.0.0.0/0
+Protocol:
+TCP
+
+Port:
+22
+
+Source:
+0.0.0.0/0
 
 
+========================================
 SYSTEM COMPONENTS
+========================================
 
 - Amazon EventBridge
 - AWS Lambda
@@ -417,15 +595,19 @@ AWS Security Auto-Remediation System
 """
 
 
-                        # ====================================
+                        # =====================================
                         # SEND SNS NOTIFICATION
-                        # ====================================
+                        # =====================================
 
                         send_notification(
                             subject,
                             message
                         )
 
+
+                        # =====================================
+                        # RETURN SUCCESS
+                        # =====================================
 
                         return {
 
@@ -443,9 +625,23 @@ AWS Security Auto-Remediation System
         # NO OPEN SSH FOUND
         # ====================================================
 
-        print(
-            "No open SSH rule found."
-        )
+        if not remediation_performed:
+
+            print(
+                "================================"
+            )
+
+            print(
+                "NO OPEN SSH RULE FOUND"
+            )
+
+            print(
+                "================================"
+            )
+
+            print(
+                "No remediation required."
+            )
 
 
         return {
@@ -453,14 +649,15 @@ AWS Security Auto-Remediation System
             "statusCode": 200,
 
             "body": (
-                "No remediation required"
+                "No open SSH rule found. "
+                "No remediation required."
             )
 
         }
 
 
     # ========================================================
-    # AWS ERROR
+    # AWS CLIENT ERROR
     # ========================================================
 
     except ClientError as error:
@@ -485,7 +682,15 @@ AWS Security Auto-Remediation System
 
 
         print(
-            "=== REMEDIATION FAILED ==="
+            "================================"
+        )
+
+        print(
+            "REMEDIATION FAILED"
+        )
+
+        print(
+            "================================"
         )
 
 
@@ -501,7 +706,9 @@ AWS Security Auto-Remediation System
         )
 
 
-        # Publish failed remediation metric
+        # ====================================================
+        # PUBLISH FAILED REMEDIATION METRIC
+        # ====================================================
 
         publish_metric(
             "FailedRemediations"
@@ -519,7 +726,15 @@ AWS Security Auto-Remediation System
 
 
         print(
-            "=== REMEDIATION FAILED ==="
+            "================================"
+        )
+
+        print(
+            "REMEDIATION FAILED"
+        )
+
+        print(
+            "================================"
         )
 
 
@@ -529,7 +744,9 @@ AWS Security Auto-Remediation System
         )
 
 
-        # Publish failed remediation metric
+        # ====================================================
+        # PUBLISH FAILED REMEDIATION METRIC
+        # ====================================================
 
         publish_metric(
             "FailedRemediations"
