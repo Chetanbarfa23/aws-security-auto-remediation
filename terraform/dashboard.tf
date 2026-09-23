@@ -69,14 +69,14 @@ resource "aws_cloudwatch_dashboard" "security_auto_remediation_dashboard" {
       {
         type = "metric", x = 0, y = 8, width = 8, height = 4,
         properties = {
-          title   = "🚨 Security Events Received", region = local.dashboard_region, view = "singleValue", period = 3600, stat = "Sum",
+          title   = "🚨 Security Events Received", region = local.dashboard_region, view = "singleValue", period = 300, stat = "Sum",
           metrics = [[local.custom_ns, "SecurityFindingsReceived"]]
         }
       },
       {
         type = "metric", x = 8, y = 8, width = 8, height = 4,
         properties = {
-          title   = "⚡ Lambda Executions", region = local.dashboard_region, view = "singleValue", period = 3600, stat = "Sum",
+          title   = "⚡ Lambda Executions", region = local.dashboard_region, view = "singleValue", period = 300, stat = "Sum",
           metrics = [["AWS/Lambda", "Invocations", "FunctionName", local.lambda_function_name]]
         }
       },
@@ -90,7 +90,7 @@ resource "aws_cloudwatch_dashboard" "security_auto_remediation_dashboard" {
       {
         type = "metric", x = 0, y = 12, width = 8, height = 4,
         properties = {
-          title   = "❌ Failed Remediations", region = local.dashboard_region, view = "singleValue", period = 3600, stat = "Sum",
+          title   = "❌ Failed Remediations", region = local.dashboard_region, view = "singleValue", period = 300, stat = "Sum",
           metrics = [[local.custom_ns, "FailedRemediations", { color = "#d62728" }]]
         }
       },
@@ -104,7 +104,7 @@ resource "aws_cloudwatch_dashboard" "security_auto_remediation_dashboard" {
       {
         type = "metric", x = 16, y = 12, width = 8, height = 4,
         properties = {
-          title   = "📧 Notifications Sent", region = local.dashboard_region, view = "singleValue", period = 3600, stat = "Sum",
+          title   = "📧 Notifications Sent", region = local.dashboard_region, view = "singleValue", period = 300, stat = "Sum",
           metrics = [[local.custom_ns, "NotificationsSent"]]
         }
       },
