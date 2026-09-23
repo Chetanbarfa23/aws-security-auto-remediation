@@ -39,13 +39,11 @@ resource "aws_iam_role_policy" "lambda_permissions" {
 
   role = aws_iam_role.lambda_execution.id
 
-
   policy = jsonencode({
 
     Version = "2012-10-17"
 
     Statement = [
-
 
       # ======================================================
       # CloudWatch Logs Permissions
@@ -55,11 +53,9 @@ resource "aws_iam_role_policy" "lambda_permissions" {
         Effect = "Allow"
 
         Action = [
-
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
-
         ]
 
         Resource = "*"
@@ -69,25 +65,12 @@ resource "aws_iam_role_policy" "lambda_permissions" {
       # ======================================================
       # CloudWatch Custom Metrics Permissions
       # ======================================================
-      #
-      # Required for:
-      #
-      # SecurityFindingsReceived
-      # RemediationAttempts
-      # SuccessfulRemediations
-      # FailedRemediations
-      # NotificationsSent
-      # NotificationFailures
-      #
-      # ======================================================
 
       {
         Effect = "Allow"
 
         Action = [
-
           "cloudwatch:PutMetricData"
-
         ]
 
         Resource = "*"
@@ -102,9 +85,7 @@ resource "aws_iam_role_policy" "lambda_permissions" {
         Effect = "Allow"
 
         Action = [
-
           "ec2:DescribeSecurityGroups"
-
         ]
 
         Resource = "*"
@@ -119,9 +100,7 @@ resource "aws_iam_role_policy" "lambda_permissions" {
         Effect = "Allow"
 
         Action = [
-
           "ec2:RevokeSecurityGroupIngress"
-
         ]
 
         # Lambda can modify ONLY our demo Security Group.
@@ -137,9 +116,7 @@ resource "aws_iam_role_policy" "lambda_permissions" {
         Effect = "Allow"
 
         Action = [
-
           "sns:Publish"
-
         ]
 
         # Lambda can publish ONLY to our security alert topic.
@@ -155,9 +132,7 @@ resource "aws_iam_role_policy" "lambda_permissions" {
         Effect = "Allow"
 
         Action = [
-
           "sqs:SendMessage"
-
         ]
 
         # Lambda can send failed events only to our DLQ.
@@ -183,29 +158,25 @@ resource "aws_lambda_function" "security_remediation" {
 
   handler = "handler.lambda_handler"
 
-
   # ----------------------------------------------------------
   # Lambda Deployment Package
   # ----------------------------------------------------------
 
   filename = "${path.module}/lambda_function.zip"
 
-
-  # ----------------------------------------------------------
-  # Detect Lambda Code Changes
-  # ----------------------------------------------------------
+  # Detect changes in Lambda deployment package.
+  # This forces Terraform to update Lambda whenever
+  # lambda_function.zip changes.
 
   source_code_hash = filebase64sha256(
     "${path.module}/lambda_function.zip"
   )
-
 
   # ----------------------------------------------------------
   # Lambda Execution Role
   # ----------------------------------------------------------
 
   role = aws_iam_role.lambda_execution.arn
-
 
   # ----------------------------------------------------------
   # Ensure IAM Policy Exists Before Lambda Deployment
@@ -236,16 +207,13 @@ resource "aws_lambda_function_event_invoke_config" "security_remediation" {
 
   function_name = aws_lambda_function.security_remediation.function_name
 
-
   # Lambda keeps failed asynchronous events for up to 1 hour.
 
   maximum_event_age_in_seconds = 3600
 
-
   # Retry failed Lambda invocation twice.
 
   maximum_retry_attempts = 2
-
 
   destination_config {
 
